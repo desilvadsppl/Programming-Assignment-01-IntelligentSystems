@@ -1,133 +1,89 @@
+# Import necessary libraries
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import joblib
 import time
+from PIL import Image
 
-# Page Title
-st.title("Streamlit ML Application - Iris Flower Classification")
-
-# 1. Sidebar for User Inputs
-# ---------------------------
-st.sidebar.header("User Input Parameters")
-
-
-def user_input_features():
-        # Adding sliders in the sidebar for input parameters
-        sepal_length = st.sidebar.slider('Sepal length (cm)', 4.3, 7.9, 5.4)
-        sepal_width = st.sidebar.slider('Sepal width (cm)', 2.0, 4.4, 3.4)
-        petal_length = st.sidebar.slider('Petal length (cm)', 1.0, 6.9, 1.3)
-        petal_width = st.sidebar.slider('Petal width (cm)', 0.1, 2.5, 0.2)
-
-        # Collecting the user input into a dataframe
-        data = {
-            'sepal_length': sepal_length,
-            'sepal_width': sepal_width,
-            'petal_length': petal_length,
-            'petal_width': petal_width
-        }
-        features = pd.DataFrame(data, index=[0])
-        return features
-
-
-# Getting user input
-df = user_input_features()
-
-# Display user input parameters
-st.subheader('User Input Parameters')
-st.write(df)
-
-# 2. File Upload Feature (Optional)
-# ---------------------------------
-st.subheader("Upload and Display Image")
-uploaded_file = st.file_uploader("Choose an image...",
-                                 type=["jpg", "png", "jpeg"])
-if uploaded_file is not None:
-        # Display the uploaded image
-        st.image(uploaded_file,
-                 caption='Uploaded Image.',
-                 use_column_width=True)
-        st.write("Image Uploaded Successfully!")
-
-# 3. Display Progress Bar and Status Update
-# -----------------------------------------
-# Simulate a long computation
-progress_bar = st.progress(0)
-status_text = st.empty()  # Placeholder for status message
-
-# Simulate a process with status updates
-for i in range(100):
-        progress_bar.progress(i + 1)
-        status_text.text(f"Processing... {i + 1}% complete")
-        time.sleep(0.02)  # Simulate computation time
-
-st.success("Process Completed!")
-
-# 4. Load Iris Dataset and Train Model
-# ------------------------------------
+# Load the Iris dataset
 iris = load_iris()
 X = iris.data
-Y = iris.target
+y = iris.target
+feature_names = iris.feature_names
+target_names = iris.target_names
 
-# Train a RandomForest Classifier
-clf = RandomForestClassifier()
-clf.fit(X, Y)
+# Train a model (if you want to keep it simple, just load a pre-trained model)
+def train_model():
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    joblib.dump(model, 'iris_model.pkl')
+    return accuracy
 
-# Make predictions based on user input
-prediction = clf.predict(df)
-prediction_proba = clf.predict_proba(df)
+# Check if the model is already trained
+try:
+    model = joblib.load('iris_model.pkl')
+except:
+    accuracy = train_model()
+    model = joblib.load('iris_model.pkl')
+    st.sidebar.success(f'Model trained with accuracy: {accuracy:.2f}')
 
-# 5. Display Model Predictions
-# ----------------------------
-# Display the prediction and prediction probability
-st.subheader('Class labels and their corresponding index number')
-st.write(iris.target_names)
+# Title of the app
+st.title("Iris Flower Species Classification")
 
-st.subheader('Prediction')
-st.write(f"The predicted class is: **{iris.target_names[prediction][0]}**")
+# Sidebar for user input
+st.sidebar.header("User Input Features")
 
-st.subheader('Prediction Probability')
-st.write(prediction_proba)
+# User input for feature selection
+sepal_length = st.sidebar.slider("Sepal Length (cm)", 4.0, 8.0, 5.0)
+sepal_width = st.sidebar.slider("Sepal Width (cm)", 2.0, 4.5, 3.0)
+petal_length = st.sidebar.slider("Petal Length (cm)", 1.0, 7.0, 1.5)
+petal_width = st.sidebar.slider("Petal Width (cm)", 0.1, 2.5, 0.2)
 
-# 6. Graphical Visualization of the Dataset
-# -----------------------------------------
-st.subheader('Visualization of the Iris Dataset')
+# Media upload section
+st.sidebar.header("Upload an Image")
+uploaded_file = st.sidebar.file_uploader("Upload an image of an Iris flower (optional)", type=["jpg", "jpeg", "png"])
 
-# Scatter plot of the dataset
-fig, ax = plt.subplots()
-scatter = ax.scatter(X[:, 0], X[:, 1], c=Y, cmap='viridis')
-ax.set_xlabel("Sepal Length (cm)")
-ax.set_ylabel("Sepal Width (cm)")
-ax.set_title("Sepal Length vs Sepal Width")
-plt.colorbar(scatter, ax=ax, label='Classes')
+# Display uploaded image
+if uploaded_file is not None:
+    img = Image.open(uploaded_file)
+    st.sidebar.image(img, caption='Uploaded Image', use_column_width=True)
 
-# Display the scatter plot in Streamlit
-st.pyplot(fig)
+# Prepare input data for prediction
+input_data = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
 
-# Display a histogram of the class distribution
-st.subheader('Histogram of the Iris Dataset')
-fig, ax = plt.subplots()
-ax.hist(Y, bins=3, edgecolor='k')
-ax.set_xlabel("Classes")
-ax.set_ylabel("Frequency")
-ax.set_title("Histogram of Class Distribution in Iris Dataset")
+# Progress indicator
+st.sidebar.text("Making predictions...")
+progress_bar = st.sidebar.progress(0)
 
-# Display the histogram in Streamlit
-st.pyplot(fig)
+for percent_complete in range(100):
+    time.sleep(0.02)  # Simulate a processing delay
+    progress_bar.progress(percent_complete + 1)
 
-# 7. Button Interaction Example
-# -----------------------------
-# Add a button for additional interactivity
-if st.button("Show Dataset Description"):
-        st.subheader("Iris Dataset Description")
-        st.write(iris.DESCR)
+# Classify the input data
+prediction = model.predict(input_data)
+prediction_proba = model.predict_proba(input_data)
 
-# 8. Organizing Layout with Containers
-# ------------------------------------
-# Create a container for displaying information about the model
-with st.container():
-        st.write("### Random Forest Classifier Information")
-        st.write(
-            "The Random Forest classifier was trained on the Iris dataset to classify different types of flowers based on their features."
-        )
+# Display results
+st.subheader("Prediction:")
+st.write(f"The predicted species is: **{target_names[prediction[0]]}**")
+
+# Display prediction probabilities
+st.subheader("Prediction Probabilities:")
+proba_df = pd.DataFrame(prediction_proba, columns=target_names)
+st.bar_chart(proba_df)
+
+# Display the dataset
+st.subheader("Iris Dataset")
+st.dataframe(pd.DataFrame(data=iris.data, columns=iris.feature_names))
+
+# Footer message
+st.sidebar.text("Built with Streamlit")
