@@ -17,7 +17,7 @@ This is a **Streamlit web application** that allows users to upload an image and
 
 ## Demo
 
-You can try out the app [here](https://blank-app-oklgjmcq36o.streamlit.app/). (Replace this link with your Streamlit Cloud deployment link)
+You can try out the app [here](https://blank-app-oklgjmcq36o.streamlit.app/).
 
 ## How It Works
 
@@ -80,7 +80,7 @@ pip install -r requirements.txt
 
 ### Upload and Classify
 
-![Image Upload](/workspaces/Programming-Assignment-01-IntelligentSystems/Img/Screenshot 2024-10-04 112850.png)
+https://drive.google.com/drive/folders/1Mm40k9vFBn6xWj4DdOUgmRuXEGF-wRaM?usp=sharing
 
 ## Deployment
 
