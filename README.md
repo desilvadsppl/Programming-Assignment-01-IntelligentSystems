@@ -1,8 +1,6 @@
-Here’s a sample `README.md` file for your image classification app using a pre-trained ResNet model:
-
----
-
 # Image Classification using ResNet
+
+Created By: D.S.P.Pubuditha Lakshan De Silva (ITBIN-2110-0020)
 
 This is a **Streamlit web application** that allows users to upload an image and classify it using a pre-trained **ResNet-50** model. The app predicts the class of the image based on the **ImageNet dataset**. It provides interactive features such as file uploads, progress updates, and visualizations of the model's top predictions.
 
