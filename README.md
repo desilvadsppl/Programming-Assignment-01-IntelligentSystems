@@ -80,11 +80,7 @@ pip install -r requirements.txt
 
 ### Upload and Classify
 
-![Image Upload](path-to-your-screenshot.png)
-
-### Top 5 Predictions
-
-![Top Predictions](path-to-your-screenshot.png)
+![Image Upload](/workspaces/Programming-Assignment-01-IntelligentSystems/Img/Screenshot 2024-10-04 112850.png)
 
 ## Deployment
 
