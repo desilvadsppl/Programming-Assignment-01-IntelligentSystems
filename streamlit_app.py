@@ -1,93 +1,109 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+from PIL import Image
+import torch
+from torchvision import models, transforms
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+import requests
+import json
 
-# Load the Iris dataset
-iris = load_iris()
-X = iris.data
-y = iris.target
-target_names = iris.target_names
+# Title and description
+st.title("Image Classification using ResNet")
+st.write("Upload an image and the app will classify it using a pre-trained ResNet model.")
 
-# Sidebar for user input
-st.sidebar.title("Iris Flower Classification")
-st.sidebar.subheader("User Inputs")
+# Sidebar - App Information
+st.sidebar.header("About the App")
+st.sidebar.write("This app uses a pre-trained ResNet model to classify uploaded images. "
+                 "You can upload an image, and the model will predict the class of the image.")
 
-# Slider for sepal length
-sepal_length = st.sidebar.slider("Sepal Length (cm)", float(X[:, 0].min()), float(X[:, 0].max()), float(X[:, 0].mean()))
-# Slider for sepal width
-sepal_width = st.sidebar.slider("Sepal Width (cm)", float(X[:, 1].min()), float(X[:, 1].max()), float(X[:, 1].mean()))
-# Slider for petal length
-petal_length = st.sidebar.slider("Petal Length (cm)", float(X[:, 2].min()), float(X[:, 2].max()), float(X[:, 2].mean()))
-# Slider for petal width
-petal_width = st.sidebar.slider("Petal Width (cm)", float(X[:, 3].min()), float(X[:, 3].max()), float(X[:, 3].mean()))
+# File uploader widget
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
-# Create a DataFrame from user inputs
-user_input = pd.DataFrame([[sepal_length, sepal_width, petal_length, petal_width]], columns=iris.feature_names)
+# Progress bar
+progress_bar = st.progress(0)
+status_text = st.empty()
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Train the RandomForest model
-if st.sidebar.button("Train Model"):
-    with st.spinner("Training model..."):
-        model = RandomForestClassifier(n_estimators=100)
-        model.fit(X_train, y_train)
-        st.success("Model trained successfully!")
-
-# Make predictions
-if st.sidebar.button("Predict"):
-    prediction = model.predict(user_input)
-    prediction_proba = model.predict_proba(user_input)
-    
-    # Display prediction results
-    st.subheader("Prediction")
-    st.write(f"The predicted class is: {target_names[prediction][0]}")
-    st.write("Prediction Probabilities:")
-    st.write(pd.DataFrame(prediction_proba, columns=target_names))
-
-    # Display confusion matrix
-    cm = confusion_matrix(y_test, model.predict(X_test))
-    st.subheader("Confusion Matrix")
-    st.write(cm)
-
-    # Display classification report
-    st.subheader("Classification Report")
-    st.text(classification_report(y_test, model.predict(X_test), target_names=target_names))
-
-# Display media upload option
-st.sidebar.subheader("Upload Media")
-uploaded_file = st.sidebar.file_uploader("Upload an image, video, or audio file", type=["jpg", "png", "mp4", "wav"])
 if uploaded_file is not None:
-    if uploaded_file.type.startswith("image"):
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-    elif uploaded_file.type.startswith("video"):
-        st.video(uploaded_file)
-    elif uploaded_file.type.startswith("audio"):
-        st.audio(uploaded_file)
+    # Show progress
+    status_text.text("Loading image...")
+    progress_bar.progress(10)
 
-# Display graphs
-st.subheader("Data Visualization")
-st.write("Iris Dataset Scatter Plot")
-plt.figure(figsize=(10, 6))
-plt.scatter(X[:, 0], X[:, 1], c=y, cmap='viridis')
-plt.xlabel(iris.feature_names[0])
-plt.ylabel(iris.feature_names[1])
-plt.title("Sepal Length vs Sepal Width")
-st.pyplot(plt)
+    # Load the image
+    img = Image.open(uploaded_file)
+    st.image(img, caption='Uploaded Image', use_column_width=True)
+    
+    # Define the image transformation
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
-# Progress and Status Updates
-st.sidebar.subheader("Application Status")
-st.sidebar.info("Model has been trained." if 'model' in locals() else "Model is not yet trained.")
+    # Show progress
+    status_text.text("Preparing image for classification...")
+    progress_bar.progress(30)
 
-# GitHub link
-st.sidebar.subheader("GitHub Repository")
-st.sidebar.markdown("[View on GitHub](https://github.com/desilvadsppl/Programming-Assignment-01-IntelligentSystems.git)")
+    # Preprocess the image and convert it to a tensor
+    img_tensor = preprocess(img).unsqueeze(0)
 
-# Instructions for deployment
-st.sidebar.subheader("Deployment")
-st.sidebar.info("Deploy your Streamlit app on Streamlit Cloud.")
+    # Load pre-trained ResNet model
+    model = models.resnet50(pretrained=True)
+    model.eval()
+
+    # Show progress
+    status_text.text("Classifying image...")
+    progress_bar.progress(60)
+
+    # Perform image classification
+    with torch.no_grad():
+        outputs = model(img_tensor)
+    
+    # Get the predicted class
+    _, predicted = outputs.max(1)
+    class_index = predicted.item()
+
+    # Load the labels for ImageNet classes
+    LABELS_URL = "https://storage.googleapis.com/download.tensorflow.org/data/imagenet_class_index.json"
+    response = requests.get(LABELS_URL)
+    labels = response.json()
+
+    # Function to map class index to label
+    def get_class_label(index):
+        return labels[str(index)][1]  # The second value is the human-readable label
+
+    # Get the predicted label
+    predicted_label = get_class_label(class_index)
+
+    # Show progress
+    status_text.text("Finalizing results...")
+    progress_bar.progress(90)
+
+    # Display the prediction
+    st.write(f"Prediction: {predicted_label}")
+
+    # Show progress completion
+    progress_bar.progress(100)
+    status_text.text("Classification complete!")
+
+    # Visualize results (Top 5 Predictions)
+    st.write("### Visualization of Model Confidence")
+    topk = torch.topk(outputs, 5)
+    topk_indices = topk.indices[0].tolist()
+    topk_scores = topk.values[0].tolist()
+
+    fig, ax = plt.subplots()
+    top_labels = [get_class_label(idx) for idx in topk_indices]
+    ax.barh(top_labels, topk_scores)
+    ax.invert_yaxis()
+    st.pyplot(fig)
+
+    # Sidebar Info: Top 5 Predictions
+    st.sidebar.subheader("Top Predicted Classes")
+    for i in range(5):
+        st.sidebar.write(f"{i + 1}: {top_labels[i]} ({topk_scores[i]:.4f})")
+
+else:
+    st.write("Please upload an image to proceed.")
+
+# Footer
+st.sidebar.markdown("Created by: **D.S.P. Pubuditha Lakshan De Silva**")
