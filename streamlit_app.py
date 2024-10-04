@@ -17,6 +17,39 @@ with st.sidebar:
     st.write("Upload an image, then press the 'Classify Image' button to get the predicted class.")
     st.write("You will also see the top 5 predicted classes and a confidence bar chart.")
     st.write("Developed using PyTorch and Streamlit.")
+    st.write('''
+Common Image Categories to Test:
+
+**Animals**:
+- Dogs (e.g., golden retriever, border collie)
+- Cats (e.g., Siamese cat, tabby)
+- Birds (e.g., flamingo, parrot, hawk)
+- Fish (e.g., goldfish, shark)
+
+**Objects**:
+- Everyday items like chairs, laptops, coffee mugs, and bottles.
+- Vehicles such as cars, bicycles, buses, or airplanes.
+- Sports equipment like basketballs, tennis rackets, or skis.
+
+**Scenes**:
+- Natural landscapes like mountains, beaches, or forests.
+- Urban settings with buildings, bridges, or streets.
+
+**Foods**:
+- Fruits (e.g., apple, banana, orange)
+- Dishes (e.g., pizza, hamburger, sushi)
+
+**People**:
+- Images of human activities (e.g., person riding a horse, person playing soccer).
+
+**Furniture and Household Items**:
+- Sofas, tables, lamps, and other common home items.
+
+**General Guidelines**:
+- High-Quality, Clear Images: Make sure the images are clear and recognizable by the model.
+- Single Object Focus: It's ideal if the image focuses on a single object for better classification accuracy.
+- Real-World Images: You can use photos taken with your camera or images from the internet that match these categories.
+''')
     confidence_threshold = st.slider("Confidence Threshold (for top classes)", 0.0, 1.0, 0.5, 0.1)  # Optional feature for future use
 
 # File uploader widget

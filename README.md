@@ -17,7 +17,7 @@ This is a **Streamlit web application** that allows users to upload an image and
 
 ## Demo
 
-You can try out the app [here](https://your-streamlit-app-link). (Replace this link with your Streamlit Cloud deployment link)
+You can try out the app [here](https://blank-app-oklgjmcq36o.streamlit.app/). (Replace this link with your Streamlit Cloud deployment link)
 
 ## How It Works
 
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/your-repo-name.git
+   git clone https://github.com/desilvadsppl/Programming-Assignment-01-IntelligentSystems.git
    cd your-repo-name
    ```
 
@@ -98,7 +98,3 @@ This app is deployed using **Streamlit Cloud**. Follow these steps to deploy it 
 ## License
 
 This project is licensed under the MIT License.
-
----
-
-Feel free to modify this file as needed! You can also add screenshots of your app to showcase its features. Let me know if you'd like further customization or any additional information!
