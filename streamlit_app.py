@@ -150,4 +150,4 @@ else:
     st.write("Please upload an image and press the 'Classify Image' button to proceed.")
 
 # Footer in sidebar
-st.sidebar.markdown("Created by: **D.S.P.Pubuditha Lakshan De Silva**")
+st.sidebar.markdown("Created by: **D.S.P.Pubuditha Lakshan De Silva (ITBIN-2110-0020)**")
