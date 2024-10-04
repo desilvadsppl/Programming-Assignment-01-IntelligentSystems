@@ -2,108 +2,119 @@ import streamlit as st
 from PIL import Image
 import torch
 from torchvision import models, transforms
-import matplotlib.pyplot as plt
 import requests
 import json
+import matplotlib.pyplot as plt
 
 # Title and description
 st.title("Image Classification using ResNet")
-st.write("Upload an image and the app will classify it using a pre-trained ResNet model.")
+st.write("Upload an image and classify it using a pre-trained ResNet model.")
 
-# Sidebar - App Information
-st.sidebar.header("About the App")
-st.sidebar.write("This app uses a pre-trained ResNet model to classify uploaded images. "
-                 "You can upload an image, and the model will predict the class of the image.")
+# Sidebar - App Information and Settings
+with st.sidebar:
+    st.header("About the App")
+    st.write("This app uses a pre-trained ResNet model to classify uploaded images into one of the 1,000 ImageNet categories.")
+    st.write("Upload an image, then press the 'Classify Image' button to get the predicted class.")
+    st.write("You will also see the top 5 predicted classes and a confidence bar chart.")
+    st.write("Developed using PyTorch and Streamlit.")
+    confidence_threshold = st.slider("Confidence Threshold (for top classes)", 0.0, 1.0, 0.5, 0.1)  # Optional feature for future use
 
 # File uploader widget
 uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
-# Progress bar
+# Button to trigger image classification
+classify_button = st.button("Classify Image")
+
+# Progress bar and status update
 progress_bar = st.progress(0)
 status_text = st.empty()
 
-if uploaded_file is not None:
-    # Show progress
-    status_text.text("Loading image...")
-    progress_bar.progress(10)
+if uploaded_file is not None and classify_button:
+    # Containers for better layout
+    with st.container():
+        # Show progress
+        status_text.text("Loading image...")
+        progress_bar.progress(10)
 
-    # Load the image
-    img = Image.open(uploaded_file)
-    st.image(img, caption='Uploaded Image', use_column_width=True)
-    
-    # Define the image transformation
-    preprocess = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+        # Load and display the uploaded image
+        img = Image.open(uploaded_file)
+        st.image(img, caption='Uploaded Image', use_column_width=True)
 
-    # Show progress
-    status_text.text("Preparing image for classification...")
-    progress_bar.progress(30)
+        # Define image transformations for ResNet
+        preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
-    # Preprocess the image and convert it to a tensor
-    img_tensor = preprocess(img).unsqueeze(0)
+        # Show progress
+        status_text.text("Preparing image for classification...")
+        progress_bar.progress(30)
 
-    # Load pre-trained ResNet model
-    model = models.resnet50(pretrained=True)
-    model.eval()
+        # Preprocess the image and convert it to a tensor
+        img_tensor = preprocess(img).unsqueeze(0)
 
-    # Show progress
-    status_text.text("Classifying image...")
-    progress_bar.progress(60)
+        # Load pre-trained ResNet model
+        model = models.resnet50(pretrained=True)
+        model.eval()
 
-    # Perform image classification
-    with torch.no_grad():
-        outputs = model(img_tensor)
-    
-    # Get the predicted class
-    _, predicted = outputs.max(1)
-    class_index = predicted.item()
+        # Show progress
+        status_text.text("Classifying image...")
+        progress_bar.progress(60)
 
-    # Load the labels for ImageNet classes
-    LABELS_URL = "https://storage.googleapis.com/download.tensorflow.org/data/imagenet_class_index.json"
-    response = requests.get(LABELS_URL)
-    labels = response.json()
+        # Perform image classification
+        with torch.no_grad():
+            outputs = model(img_tensor)
 
-    # Function to map class index to label
-    def get_class_label(index):
-        return labels[str(index)][1]  # The second value is the human-readable label
+        # Get the predicted class
+        _, predicted = outputs.max(1)
+        class_index = predicted.item()
 
-    # Get the predicted label
-    predicted_label = get_class_label(class_index)
+        # Load the labels for ImageNet classes from a public URL
+        LABELS_URL = "https://storage.googleapis.com/download.tensorflow.org/data/imagenet_class_index.json"
+        response = requests.get(LABELS_URL)
+        labels = response.json()
 
-    # Show progress
-    status_text.text("Finalizing results...")
-    progress_bar.progress(90)
+        # Function to get the class label from the predicted index
+        def get_class_label(index):
+            return labels[str(index)][1]  # The second value is the human-readable label
 
-    # Display the prediction
-    st.write(f"Prediction: {predicted_label}")
+        # Get the human-readable class label for the prediction
+        class_label = get_class_label(class_index)
 
-    # Show progress completion
-    progress_bar.progress(100)
-    status_text.text("Classification complete!")
+        # Show progress
+        status_text.text("Finalizing results...")
+        progress_bar.progress(90)
 
-    # Visualize results (Top 5 Predictions)
-    st.write("### Visualization of Model Confidence")
-    topk = torch.topk(outputs, 5)
-    topk_indices = topk.indices[0].tolist()
-    topk_scores = topk.values[0].tolist()
+        # Display the prediction
+        st.write(f"Prediction: **{class_label}**")
 
-    fig, ax = plt.subplots()
-    top_labels = [get_class_label(idx) for idx in topk_indices]
-    ax.barh(top_labels, topk_scores)
-    ax.invert_yaxis()
-    st.pyplot(fig)
+        # Show progress completion
+        progress_bar.progress(100)
+        status_text.text("Classification complete!")
 
-    # Sidebar Info: Top 5 Predictions
-    st.sidebar.subheader("Top Predicted Classes")
-    for i in range(5):
-        st.sidebar.write(f"{i + 1}: {top_labels[i]} ({topk_scores[i]:.4f})")
+        # Visualization of the top 5 predictions
+        st.write("### Visualization of Model Confidence")
+        fig, ax = plt.subplots()
+
+        # Top 5 predictions
+        top_k = torch.topk(outputs, 5).indices.squeeze(0).tolist()
+        top_labels = [get_class_label(i) for i in top_k]
+        top_values = [outputs[0, i].item() for i in top_k]
+
+        # Bar chart for top 5 predicted classes
+        ax.barh(top_labels, top_values)
+        ax.invert_yaxis()  # Highest probability at the top
+        st.pyplot(fig)
+
+        # Sidebar Info - Top Predicted Classes
+        st.sidebar.subheader("Top Predicted Classes")
+        for i in range(5):
+            st.sidebar.write(f"{i + 1}: {get_class_label(top_k[i])} with confidence {top_values[i]:.4f}")
 
 else:
-    st.write("Please upload an image to proceed.")
+    st.write("Please upload an image and press the 'Classify Image' button to proceed.")
 
-# Footer
-st.sidebar.markdown("Created by: **D.S.P. Pubuditha Lakshan De Silva**")
+# Footer in sidebar
+st.sidebar.markdown("Created by: **D.S.P.Pubuditha Lakshan De Silva**")
