@@ -62,6 +62,10 @@ if uploaded_file is not None:
 # Prepare input data for prediction
 input_data = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
 
+# Display input data for debugging
+st.write("Input Data for Prediction:")
+st.write(pd.DataFrame(input_data, columns=feature_names))
+
 # Progress indicator
 st.sidebar.text("Making predictions...")
 progress_bar = st.sidebar.progress(0)
